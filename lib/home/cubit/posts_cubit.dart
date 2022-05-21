@@ -43,4 +43,26 @@ class PostsCubit extends Cubit<PostsState> {
       emit(PostsCreateError());
     }
   }
+
+  Future<void> editPost({
+    required String postTitle,
+    required String postBody,
+    required int userId,
+  }) async {
+    emit(PostsEditInProgress());
+    try {
+      final newPost = Post(
+        title: postTitle,
+        body: postBody,
+        userId: userId,
+      );
+
+      final post = await postRepository.createPost(post: newPost);
+
+      emit(PostsEditSuccess(postId: post.id!));
+    } on Object catch (e) {
+      log(e.toString());
+      emit(PostsEditError());
+    }
+  }
 }

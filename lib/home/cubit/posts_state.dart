@@ -22,6 +22,18 @@ class PostsCreateSuccess extends PostsState {
 
 class PostsCreateError extends PostsState {}
 
+class PostsEditInProgress extends PostsState {}
+
+class PostsEditSuccess extends PostsState {
+  PostsEditSuccess({required this.postId});
+  final int postId;
+
+  @override
+  List<Object?> get props => [postId];
+}
+
+class PostsEditError extends PostsState {}
+
 class PostsLoadSuccess extends PostsState {
   PostsLoadSuccess({required this.posts});
   final List<Post> posts;

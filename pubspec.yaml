@@ -12,6 +12,7 @@ dependencies:
   flutter:
     sdk: flutter
   flutter_bloc: ^8.0.1
+  flutter_slidable: ^1.2.1
   intl: ^0.17.0
   repositories:
     path: repositories

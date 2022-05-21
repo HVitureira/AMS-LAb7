@@ -1,40 +1,107 @@
 import 'package:ams_lab7/home/cubit/posts_cubit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:repositories/repositories.dart';
 
-class CreatePostPage extends StatefulWidget {
-  const CreatePostPage._internal({super.key});
+enum PostAction { create, edit, view }
 
-  static Route route({required PostsCubit postCubit}) {
+class ManagePostPage extends StatefulWidget {
+  const ManagePostPage._internal({
+    required this.action,
+    this.post,
+    super.key,
+  });
+
+  static Route _route({
+    PostsCubit? postCubit,
+    Post? post,
+    required PostAction postAction,
+  }) {
     return MaterialPageRoute<void>(
       builder: (context) {
         return BlocProvider.value(
-          value: postCubit,
-          child: const CreatePostPage._internal(),
+          value: postCubit ??
+              PostsCubit(
+                postRepository:
+                    RepositoryCollection.instance.retrieve<PostRepository>(),
+              ),
+          child: ManagePostPage._internal(
+            action: postAction,
+            post: post,
+          ),
         );
       },
     );
   }
 
+  static Route routeCreate({
+    required PostsCubit postCubit,
+  }) {
+    return _route(
+      postCubit: postCubit,
+      postAction: PostAction.create,
+    );
+  }
+
+  static Route routeView({
+    required Post post,
+  }) {
+    return _route(
+      postAction: PostAction.view,
+      post: post,
+    );
+  }
+
+  static Route routeEdit({
+    required PostsCubit postCubit,
+    required Post post,
+  }) {
+    return _route(
+      postCubit: postCubit,
+      post: post,
+      postAction: PostAction.edit,
+    );
+  }
+
+  final PostAction action;
+  final Post? post;
+
   @override
-  State<CreatePostPage> createState() => _CreatePostPageState();
+  State<ManagePostPage> createState() => _ManagePostPageState();
 }
 
-class _CreatePostPageState extends State<CreatePostPage> {
+class _ManagePostPageState extends State<ManagePostPage> {
   GlobalKey<FormState> formKey = GlobalKey<FormState>();
 
   double userIdSliderVal = 1;
-  TextEditingController titleController = TextEditingController();
-  TextEditingController bodyController = TextEditingController();
+
+  bool get isView => widget.action == PostAction.view;
+  bool get isEdit => widget.action == PostAction.edit;
+  Post? get currentPost => widget.post;
+  double get sliderValue =>
+      isEdit ? currentPost!.userId!.toDouble() : userIdSliderVal;
+  late TextEditingController titleController;
+  late TextEditingController bodyController;
+
+  @override
+  void initState() {
+    super.initState();
+    titleController = TextEditingController()
+      ..text = ((isView || isEdit) ? currentPost?.title : '')!;
+    bodyController = TextEditingController()
+      ..text = ((isView || isEdit) ? currentPost?.body : '')!;
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      floatingActionButton: FloatingActionButton(
-        onPressed: _submitForm,
-        child: const Icon(Icons.save),
-      ),
-      appBar: AppBar(title: const Text('Create Post')),
+      floatingActionButton: isView
+          ? null
+          : FloatingActionButton(
+              onPressed: _submitForm,
+              child: Icon(isEdit ? Icons.edit : Icons.save),
+            ),
+      appBar: AppBar(title: Text(_getPageTitle())),
       body: BlocConsumer<PostsCubit, PostsState>(
         listener: (context, state) {
           if (state is PostsCreateSuccess) {
@@ -42,6 +109,11 @@ class _CreatePostPageState extends State<CreatePostPage> {
             Navigator.pop(context);
           } else if (state is PostsCreateError) {
             _showSnackbar('Error trying to create a post!');
+          } else if (state is PostsEditSuccess) {
+            _showSnackbar('Post was edited with id ${state.postId}!');
+            Navigator.pop(context);
+          } else if (state is PostsEditError) {
+            _showSnackbar('Error trying to edit the post!');
           }
         },
         builder: (context, state) {
@@ -68,16 +140,18 @@ class _CreatePostPageState extends State<CreatePostPage> {
                                 label: userIdSliderVal.toInt().toString(),
                                 min: 1,
                                 max: 10,
-                                value: userIdSliderVal,
-                                onChanged: (value) {
-                                  setState(() {
-                                    userIdSliderVal = value;
-                                  });
-                                },
+                                value: sliderValue,
+                                onChanged: isView
+                                    ? null
+                                    : (value) {
+                                        setState(() {
+                                          userIdSliderVal = value;
+                                        });
+                                      },
                               ),
                             ),
                             Text(
-                              userIdSliderVal.toInt().toString(),
+                              sliderValue.toInt().toString(),
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                               ),
@@ -85,6 +159,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
                           ],
                         ),
                         TextFormField(
+                          readOnly: isView,
                           controller: titleController,
                           maxLength: 100,
                           decoration: const InputDecoration(labelText: 'Title'),
@@ -99,6 +174,8 @@ class _CreatePostPageState extends State<CreatePostPage> {
                           },
                         ),
                         TextFormField(
+                          readOnly: isView,
+                          maxLines: 10,
                           controller: bodyController,
                           decoration: const InputDecoration(labelText: 'Body'),
                         ),
@@ -118,11 +195,30 @@ class _CreatePostPageState extends State<CreatePostPage> {
     if (formKey.currentState!.validate()) {
       final title = titleController.text;
       final body = bodyController.text;
-      BlocProvider.of<PostsCubit>(context).createPost(
-        postTitle: title,
-        postBody: body,
-        userId: userIdSliderVal.toInt(),
-      );
+      if (isEdit) {
+        BlocProvider.of<PostsCubit>(context).editPost(
+          postTitle: title,
+          postBody: body,
+          userId: userIdSliderVal.toInt(),
+        );
+      } else {
+        BlocProvider.of<PostsCubit>(context).createPost(
+          postTitle: title,
+          postBody: body,
+          userId: userIdSliderVal.toInt(),
+        );
+      }
+    }
+  }
+
+  String _getPageTitle() {
+    switch (widget.action) {
+      case PostAction.create:
+        return 'Create Post';
+      case PostAction.edit:
+        return 'Edit Post';
+      case PostAction.view:
+        return 'View Post';
     }
   }
 
