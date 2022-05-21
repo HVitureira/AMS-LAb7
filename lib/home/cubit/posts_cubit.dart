@@ -25,14 +25,19 @@ class PostsCubit extends Cubit<PostsState> {
   Future<void> createPost({
     required String postTitle,
     required String postBody,
+    required int userId,
   }) async {
     emit(PostsCreateInProgress());
     try {
-      final newPost = Post(title: postTitle, body: postBody);
+      final newPost = Post(
+        title: postTitle,
+        body: postBody,
+        userId: userId,
+      );
 
-      await postRepository.createPost(post: newPost);
+      final post = await postRepository.createPost(post: newPost);
 
-      emit(PostsCreateSuccess());
+      emit(PostsCreateSuccess(postId: post.id!));
     } on Object catch (e) {
       log(e.toString());
       emit(PostsCreateError());

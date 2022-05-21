@@ -12,7 +12,13 @@ class PostsLoadInProgress extends PostsState {}
 
 class PostsCreateInProgress extends PostsState {}
 
-class PostsCreateSuccess extends PostsState {}
+class PostsCreateSuccess extends PostsState {
+  PostsCreateSuccess({required this.postId});
+  final int postId;
+
+  @override
+  List<Object?> get props => [postId];
+}
 
 class PostsCreateError extends PostsState {}
 
