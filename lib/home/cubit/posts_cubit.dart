@@ -8,61 +8,67 @@ import 'package:repositories/repositories.dart';
 part 'posts_state.dart';
 
 class PostsCubit extends Cubit<PostsState> {
-  PostsCubit({required this.postRepository}) : super(PostsInitial());
+  PostsCubit({required this.postRepository})
+      : super(const PostsInitial(posts: []));
   final PostRepository postRepository;
 
   Future<void> loadPosts() async {
-    emit(PostsLoadInProgress());
+    emit(PostsLoadInProgress(posts: state.posts));
     try {
       final posts = await postRepository.getPosts();
       emit(PostsLoadSuccess(posts: posts));
     } on Object catch (e) {
       log(e.toString());
-      emit(PostsLoadError());
+      emit(PostsLoadError(posts: state.posts));
     }
   }
 
   Future<void> createPost({
-    required String postTitle,
-    required String postBody,
-    required int userId,
+    required Post post,
   }) async {
-    emit(PostsCreateInProgress());
+    emit(PostsCreateInProgress(posts: state.posts));
     try {
       final newPost = Post(
-        title: postTitle,
-        body: postBody,
-        userId: userId,
+        title: post.title,
+        body: post.body,
+        userId: post.userId,
       );
 
-      final post = await postRepository.createPost(post: newPost);
+      final postToAdd = await postRepository.createPost(post: newPost);
+      state.posts.add(postToAdd);
 
-      emit(PostsCreateSuccess(postId: post.id!));
+      emit(PostsCreateSuccess(postId: postToAdd.id!, posts: state.posts));
     } on Object catch (e) {
       log(e.toString());
-      emit(PostsCreateError());
+      emit(PostsCreateError(posts: state.posts));
     }
   }
 
   Future<void> editPost({
-    required String postTitle,
-    required String postBody,
-    required int userId,
+    required Post post,
   }) async {
-    emit(PostsEditInProgress());
+    emit(PostsEditInProgress(posts: state.posts));
     try {
-      final newPost = Post(
-        title: postTitle,
-        body: postBody,
-        userId: userId,
-      );
-
-      final post = await postRepository.createPost(post: newPost);
-
-      emit(PostsEditSuccess(postId: post.id!));
+      await postRepository.updatePost(post: post, id: post.id ?? 1);
+      emit(PostsEditSuccess(postId: post.id ?? 1, posts: state.posts));
     } on Object catch (e) {
       log(e.toString());
-      emit(PostsEditError());
+      emit(PostsEditError(posts: state.posts));
+    }
+  }
+
+  Future<void> deletePost({
+    required int? postId,
+    required int postIndex,
+  }) async {
+    emit(PostsDeleteInProgress(posts: state.posts, postId: postId!));
+    try {
+      await postRepository.deletePost(id: postId);
+      state.posts.removeAt(postIndex);
+      emit(PostsDeleteSuccess(postId: postId, posts: state.posts));
+    } on Object catch (e) {
+      log(e.toString());
+      emit(PostsDeleteError(posts: state.posts, postId: postId));
     }
   }
 }

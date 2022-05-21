@@ -13,18 +13,15 @@ class ManagePostPage extends StatefulWidget {
   });
 
   static Route _route({
-    PostsCubit? postCubit,
+    required PostsCubit postCubit,
     Post? post,
+    int? postIndex,
     required PostAction postAction,
   }) {
     return MaterialPageRoute<void>(
       builder: (context) {
         return BlocProvider.value(
-          value: postCubit ??
-              PostsCubit(
-                postRepository:
-                    RepositoryCollection.instance.retrieve<PostRepository>(),
-              ),
+          value: postCubit,
           child: ManagePostPage._internal(
             action: postAction,
             post: post,
@@ -44,9 +41,11 @@ class ManagePostPage extends StatefulWidget {
   }
 
   static Route routeView({
+    required PostsCubit postCubit,
     required Post post,
   }) {
     return _route(
+      postCubit: postCubit,
       postAction: PostAction.view,
       post: post,
     );
@@ -55,11 +54,13 @@ class ManagePostPage extends StatefulWidget {
   static Route routeEdit({
     required PostsCubit postCubit,
     required Post post,
+    required int postIndex,
   }) {
     return _route(
       postCubit: postCubit,
       post: post,
       postAction: PostAction.edit,
+      postIndex: postIndex,
     );
   }
 
@@ -77,9 +78,10 @@ class _ManagePostPageState extends State<ManagePostPage> {
 
   bool get isView => widget.action == PostAction.view;
   bool get isEdit => widget.action == PostAction.edit;
+  bool get isCreate => widget.action == PostAction.create;
   Post? get currentPost => widget.post;
   double get sliderValue =>
-      isEdit ? currentPost!.userId!.toDouble() : userIdSliderVal;
+      isCreate || isEdit ? userIdSliderVal : currentPost!.userId!.toDouble();
   late TextEditingController titleController;
   late TextEditingController bodyController;
 
@@ -136,6 +138,7 @@ class _ManagePostPageState extends State<ManagePostPage> {
                             const Text('User ID:'),
                             Expanded(
                               child: Slider(
+                                activeColor: Colors.red,
                                 divisions: 10,
                                 label: userIdSliderVal.toInt().toString(),
                                 min: 1,
@@ -195,17 +198,15 @@ class _ManagePostPageState extends State<ManagePostPage> {
     if (formKey.currentState!.validate()) {
       final title = titleController.text;
       final body = bodyController.text;
+      final post =
+          Post(title: title, body: body, userId: userIdSliderVal.toInt());
       if (isEdit) {
         BlocProvider.of<PostsCubit>(context).editPost(
-          postTitle: title,
-          postBody: body,
-          userId: userIdSliderVal.toInt(),
+          post: post,
         );
       } else {
         BlocProvider.of<PostsCubit>(context).createPost(
-          postTitle: title,
-          postBody: body,
-          userId: userIdSliderVal.toInt(),
+          post: post,
         );
       }
     }

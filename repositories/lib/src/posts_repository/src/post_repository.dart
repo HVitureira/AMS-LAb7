@@ -23,7 +23,7 @@ abstract class PostRepository {
   });
 
   @DELETE('/posts/{id}')
-  Future<Post> deletePost({
+  Future<void> deletePost({
     @Path() required int id,
   });
 }

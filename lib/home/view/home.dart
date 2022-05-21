@@ -16,27 +16,45 @@ class HomePage extends StatelessWidget {
         onPressed: () => _openCreateScreen(context),
         child: const Icon(Icons.add),
       ),
-      body: BlocBuilder<PostsCubit, PostsState>(
-        builder: (context, state) {
-          if (state is PostsLoadSuccess) {
-            final posts = state.posts;
-            return ListView.separated(
-              itemCount: 100,
-              itemBuilder: (context, index) {
-                final post = posts.elementAt(index);
-                return PostListItem(post: post);
-              },
-              separatorBuilder: (context, index) => const Divider(
-                height: 1,
-                color: Colors.black,
-              ),
+      body: BlocConsumer<PostsCubit, PostsState>(
+        listener: (context, state) {
+          if (state is PostsDeleteInProgress) {
+            _showSnackbar('Deleting post with id ${state.postId}...', context);
+          } else if (state is PostsDeleteSuccess) {
+            _showSnackbar(
+              'Post with id ${state.postId} was deleted!',
+              context,
             );
-          } else if (state is PostsLoadInProgress) {
+          } else if (state is PostsDeleteError) {
+            _showSnackbar(
+              'Error trying to delete the post  with id ${state.postId}!',
+              context,
+            );
+          }
+        },
+        builder: (context, state) {
+          if (state is PostsLoadInProgress) {
             return const Center(
               child: CircularProgressIndicator(),
             );
           }
-          return const SizedBox();
+
+          final posts = state.posts;
+          return ListView.separated(
+            itemCount: 100,
+            itemBuilder: (context, index) {
+              final post = posts.elementAt(index);
+              return PostListItem(
+                post: post,
+                postIndex: index,
+                key: UniqueKey(),
+              );
+            },
+            separatorBuilder: (context, index) => const Divider(
+              height: 1,
+              color: Colors.black,
+            ),
+          );
         },
       ),
     );
@@ -49,12 +67,28 @@ class HomePage extends StatelessWidget {
       ManagePostPage.routeCreate(postCubit: postCubit),
     );
   }
+
+  void _showSnackbar(String message, BuildContext context) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          content: Text(message),
+        ),
+      );
+  }
 }
 
 class PostListItem extends StatelessWidget {
-  const PostListItem({required this.post, super.key});
+  const PostListItem({
+    required this.post,
+    required this.postIndex,
+    super.key,
+  });
 
   final Post post;
+  final int postIndex;
   @override
   Widget build(BuildContext context) {
     return Slidable(
@@ -64,7 +98,9 @@ class PostListItem extends StatelessWidget {
       // The end action pane is the one at the right or the bottom side.
       endActionPane: ActionPane(
         motion: const ScrollMotion(),
-        dismissible: DismissiblePane(onDismissed: () {}),
+        dismissible: DismissiblePane(
+          onDismissed: () => _deletePost(context, post.id, postIndex),
+        ),
         children: [
           SlidableAction(
             // An action can be bigger than the others.
@@ -74,8 +110,8 @@ class PostListItem extends StatelessWidget {
             icon: Icons.edit,
             label: 'Edit',
           ),
-          const SlidableAction(
-            onPressed: null,
+          SlidableAction(
+            onPressed: (context) => _deletePost(context, post.id, postIndex),
             backgroundColor: Colors.red,
             foregroundColor: Colors.white,
             icon: Icons.delete,
@@ -95,9 +131,11 @@ class PostListItem extends StatelessWidget {
   }
 
   void _openViewScreen(BuildContext context, Post post) {
+    final postCubit = BlocProvider.of<PostsCubit>(context);
+
     Navigator.push<void>(
       context,
-      ManagePostPage.routeView(post: post),
+      ManagePostPage.routeView(post: post, postCubit: postCubit),
     );
   }
 
@@ -105,7 +143,17 @@ class PostListItem extends StatelessWidget {
     final postCubit = BlocProvider.of<PostsCubit>(context);
     Navigator.push<void>(
       context,
-      ManagePostPage.routeEdit(postCubit: postCubit, post: post),
+      ManagePostPage.routeEdit(
+        postCubit: postCubit,
+        post: post,
+        postIndex: postIndex,
+      ),
     );
+  }
+
+  void _deletePost(BuildContext context, int? postId, int postIndex) {
+    final postCubit = BlocProvider.of<PostsCubit>(context);
+
+    postCubit.deletePost(postId: postId, postIndex: postIndex);
   }
 }
