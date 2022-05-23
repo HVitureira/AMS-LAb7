@@ -30,7 +30,6 @@ class PostsCubit extends Cubit<PostsState> {
     try {
       final postToAdd = await postRepository.createPost(post: post);
       state.posts.add(postToAdd);
-
       emit(PostsCreateSuccess(postId: postToAdd.id!, posts: state.posts));
     } on Object catch (e) {
       log(e.toString());

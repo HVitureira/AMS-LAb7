@@ -42,7 +42,7 @@ class HomePage extends StatelessWidget {
 
           final posts = state.posts;
           return ListView.separated(
-            itemCount: 100,
+            itemCount: posts.length,
             itemBuilder: (context, index) {
               final post = posts.elementAt(index);
               return PostListItem(

@@ -75,12 +75,12 @@ class ManagePostPage extends StatefulWidget {
 class _ManagePostPageState extends State<ManagePostPage> {
   GlobalKey<FormState> formKey = GlobalKey<FormState>();
 
-  double userIdSliderVal = 1;
-
+  Post? get currentPost => widget.post;
   bool get isView => widget.action == PostAction.view;
   bool get isEdit => widget.action == PostAction.edit;
   bool get isCreate => widget.action == PostAction.create;
-  Post? get currentPost => widget.post;
+  double userIdSliderVal = 1;
+
   double get sliderValue =>
       isCreate || isEdit ? userIdSliderVal : currentPost!.userId!.toDouble();
   late TextEditingController titleController;
@@ -93,6 +93,9 @@ class _ManagePostPageState extends State<ManagePostPage> {
       ..text = ((isView || isEdit) ? currentPost?.title : '')!;
     bodyController = TextEditingController()
       ..text = ((isView || isEdit) ? currentPost?.body : '')!;
+    if (isEdit) {
+      userIdSliderVal = currentPost!.userId!.toDouble();
+    }
   }
 
   @override
@@ -167,9 +170,6 @@ class _ManagePostPageState extends State<ManagePostPage> {
                           controller: titleController,
                           maxLength: 100,
                           decoration: const InputDecoration(labelText: 'Title'),
-                          onSaved: (String? value) {
-                            print("Value: '$value'");
-                          },
                           validator: (String? value) {
                             if (value?.isEmpty ?? false) {
                               return 'Insert a Title.';
