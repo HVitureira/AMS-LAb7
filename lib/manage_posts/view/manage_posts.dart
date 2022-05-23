@@ -1,4 +1,5 @@
 import 'package:ams_lab7/home/cubit/posts_cubit.dart';
+import 'package:ams_lab7/utils/show_snackbar_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:repositories/repositories.dart';
@@ -107,15 +108,15 @@ class _ManagePostPageState extends State<ManagePostPage> {
       body: BlocConsumer<PostsCubit, PostsState>(
         listener: (context, state) {
           if (state is PostsCreateSuccess) {
-            _showSnackbar('Post was created with id ${state.postId}!');
+            showSnackbar(context, 'Post was created with id ${state.postId}!');
             Navigator.pop(context);
           } else if (state is PostsCreateError) {
-            _showSnackbar('Error trying to create a post!');
+            showSnackbar(context, 'Error trying to create a post!');
           } else if (state is PostsEditSuccess) {
-            _showSnackbar('Post was edited with id ${state.postId}!');
+            showSnackbar(context, 'Post was edited with id ${state.postId}!');
             Navigator.pop(context);
           } else if (state is PostsEditError) {
-            _showSnackbar('Error trying to edit the post!');
+            showSnackbar(context, 'Error trying to edit the post!');
           }
         },
         builder: (context, state) {
@@ -198,14 +199,18 @@ class _ManagePostPageState extends State<ManagePostPage> {
     if (formKey.currentState!.validate()) {
       final title = titleController.text;
       final body = bodyController.text;
-      final post =
-          Post(title: title, body: body, userId: userIdSliderVal.toInt());
+      final post = Post(
+        title: title,
+        body: body,
+        userId: userIdSliderVal.toInt(),
+      );
+      final postsCubit = BlocProvider.of<PostsCubit>(context);
       if (isEdit) {
-        BlocProvider.of<PostsCubit>(context).editPost(
+        postsCubit.editPost(
           post: post,
         );
       } else {
-        BlocProvider.of<PostsCubit>(context).createPost(
+        postsCubit.createPost(
           post: post,
         );
       }
@@ -221,16 +226,5 @@ class _ManagePostPageState extends State<ManagePostPage> {
       case PostAction.view:
         return 'View Post';
     }
-  }
-
-  void _showSnackbar(String message) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          behavior: SnackBarBehavior.floating,
-          content: Text(message),
-        ),
-      );
   }
 }

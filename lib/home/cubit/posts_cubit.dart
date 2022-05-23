@@ -28,13 +28,7 @@ class PostsCubit extends Cubit<PostsState> {
   }) async {
     emit(PostsCreateInProgress(posts: state.posts));
     try {
-      final newPost = Post(
-        title: post.title,
-        body: post.body,
-        userId: post.userId,
-      );
-
-      final postToAdd = await postRepository.createPost(post: newPost);
+      final postToAdd = await postRepository.createPost(post: post);
       state.posts.add(postToAdd);
 
       emit(PostsCreateSuccess(postId: postToAdd.id!, posts: state.posts));

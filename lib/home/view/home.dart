@@ -1,5 +1,6 @@
-import 'package:ams_lab7/create_post/view/create_post_screen.dart';
 import 'package:ams_lab7/home/cubit/posts_cubit.dart';
+import 'package:ams_lab7/manage_posts/view/manage_posts.dart';
+import 'package:ams_lab7/utils/show_snackbar_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
@@ -19,16 +20,16 @@ class HomePage extends StatelessWidget {
       body: BlocConsumer<PostsCubit, PostsState>(
         listener: (context, state) {
           if (state is PostsDeleteInProgress) {
-            _showSnackbar('Deleting post with id ${state.postId}...', context);
+            showSnackbar(context, 'Deleting post with id ${state.postId}...');
           } else if (state is PostsDeleteSuccess) {
-            _showSnackbar(
-              'Post with id ${state.postId} was deleted!',
+            showSnackbar(
               context,
+              'Post with id ${state.postId} was deleted!',
             );
           } else if (state is PostsDeleteError) {
-            _showSnackbar(
-              'Error trying to delete the post  with id ${state.postId}!',
+            showSnackbar(
               context,
+              'Error trying to delete the post  with id ${state.postId}!',
             );
           }
         },
@@ -66,17 +67,6 @@ class HomePage extends StatelessWidget {
       context,
       ManagePostPage.routeCreate(postCubit: postCubit),
     );
-  }
-
-  void _showSnackbar(String message, BuildContext context) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          behavior: SnackBarBehavior.floating,
-          content: Text(message),
-        ),
-      );
   }
 }
 
